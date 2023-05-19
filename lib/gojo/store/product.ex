@@ -7,7 +7,7 @@ defmodule Gojo.Store.Product do
   schema "products" do
     field :description, :string
     field :price, :decimal
-    field :serial_number, :integer
+    field :sku, :integer
     field :title, :string
 
     belongs_to :user, Gojo.Accounts.User
@@ -19,8 +19,8 @@ defmodule Gojo.Store.Product do
   @doc false
   def changeset(product, attrs) do
     product
-    |> cast(attrs, [:title, :price, :description, :serial_number, :user_id])
-    |> validate_required([:title, :price, :description, :serial_number, :user_id])
+    |> cast(attrs, [:title, :price, :description, :sku, :user_id])
+    |> validate_required([:title, :price, :description, :sku, :user_id])
     |> unique_constraint([:sku, :user_id])
     |> foreign_key_constraint(:user_id)
   end

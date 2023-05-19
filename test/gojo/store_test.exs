@@ -1,35 +1,48 @@
 defmodule Gojo.StoreTest do
   use ExUnit.Case, async: true
+  use Gojo.DataCase
 
   alias Gojo.Store
   alias Gojo.Store.Product
+  alias Gojo.Accounts
   alias Gojo.Accounts.User
+  alias Gojo.Repo
+
 
   describe "the process" do
-    test "create users" do
-      for _ <- 1..100 do
-        user = %{
-          def email, do: Faker.Internet.email()
-          def password, do: Faker.Lorem.characters(12) |> to_string
-        }
+    setup do
+      users =
+        for _ <- 1..10 do
+          user = %{
+            email: Faker.Internet.email(),
+            password: Faker.Lorem.characters(12) |> to_string
+          }
 
-        user = Accounts.create_user(user)
-      end
+          Accounts.register_user(user)
+        end
+      %{users: users}
     end
 
-    test "create products that belong to 'seller' users" do
+    test "create products that belong to 'seller' users",%{users: users} do
       for _ <- 1..100 do
         product =
           %{
             title: Faker.Lorem.sentence(),
             description: Faker.Lorem.paragraph(),
-            price: :rand.uniform * 100 |> Float.round(2),  # This will generate a random decimal between 0.0 and 100.0
-            serial_number: Faker.Code.isbn()  # Faker doesn't provide direct hex, so using isbn for unique code.
+            price: :rand.uniform * 100 |> Float.round(2),
+            #Note not happy about abonding bigint for now.
+            sku: :rand.uniform * 100
           }
 
-        seller =
-        Store.create_product(user_id, product)
+        {:ok, seller} = Enum.random(users)
+        Store.create_product(seller.id, product)
+
       end
+    end
+
+
+    test "create users buying items" do
+
     end
   end
 end

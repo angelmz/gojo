@@ -9,40 +9,27 @@
 #
 # We recommend using the bang functions (`insert!`, `update!`
 # and so on) as they will fail if something goes wrong.
+alias Gojo.Store.Product
+alias Gojo.Repo
 
 
-Gojo.Accounts.register_user(%{
-  email: "user1@company.com",
-  password: "123456789abc",
-  password_confirmation: "123456789abc"
-})
+users =
+  for _ <- 1..10 do
+    Gojo.Accounts.register_user(%{
+      email: Faker.Internet.email(),
+      password: Faker.Lorem.characters(12) |> to_string,
+    })
+  end
 
-Gojo.Accounts.register_user(%{
-  email: "user2@company.com",
-  password: "123456789abc",
-  password_confirmation: "123456789abc"
-})
-
-Gojo.Accounts.register_user(%{
-  email: "user3@company.com",
-  password: "123456789abc",
-  password_confirmation: "123456789abc"
-})
-
-Gojo.Accounts.register_user(%{
-  email: "user4@company.com",
-  password: "123456789abc",
-  password_confirmation: "123456789abc"
-})
-
-Gojo.Accounts.register_user(%{
-  email: "user5@company.com",
-  password: "123456789abc",
-  password_confirmation: "123456789abc"
-})
-
-Gojo.Accounts.register_user(%{
-  email: "user6@company.com",
-  password: "123456789abc",
-  password_confirmation: "123456789abc"
-})
+for _ <- 1..50 do
+  {:ok, seller} = Enum.random(users)
+  Product.changeset(%Product{}, %{
+    title: Faker.Lorem.sentence() |> String.slice(0, 255),
+    description: Faker.Lorem.paragraph() |> String.slice(0, 255),
+    price: :rand.uniform * 100 |> Float.round(2),
+    #Note not happy about abonding bigint for now.
+    sku: :rand.uniform(999999999) + 1,
+    user_id: seller.id
+  })
+  |> Repo.insert!
+end

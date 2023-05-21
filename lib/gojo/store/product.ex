@@ -1,7 +1,7 @@
 defmodule Gojo.Store.Product do
   use Ecto.Schema
   import Ecto.Changeset
-  # alias Gojo.Catalog.Category
+  # alias Gojo.Store.Category
 
 
   schema "products" do

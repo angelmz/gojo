@@ -35,6 +35,17 @@ defmodule GojoWeb.ConnCase do
     Gojo.DataCase.setup_sandbox(tags)
     {:ok, conn: Phoenix.ConnTest.build_conn()}
   end
+  # setup tags do
+  #   # Gojo.DataCase.setup_sandbox(tags)
+  #   :ok = Ecto.Adapters.SQL.Sandbox.checkout(Gojo.Repo)
+
+  #   unless tags[:async] do
+  #     Ecto.Adapters.SQL.Sandbox.mode(Gojo.Repo, {:shared, self()})
+  #   end
+
+  #   {:ok, conn: Phoenix.ConnTest.build_conn()}
+  # end
+
 
   @doc """
   Setup helper that registers and logs in users.

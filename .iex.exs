@@ -6,6 +6,12 @@ alias Gojo.Store.Product
 alias Gojo.Accounts
 alias Gojo.Accounts.User
 alias Gojo.Repo
+alias Gojo.ShoppingCart
+alias Gojo.ShoppingCart.Cart
+alias Gojo.Orders
+alias Gojo.Orders.Order
+
+alias Gojo.Repo
 # alias GojoWeb.UserAuth
 alias Faker
 

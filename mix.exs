@@ -52,7 +52,7 @@ defmodule Gojo.MixProject do
       {:jason, "~> 1.2"},
       {:plug_cowboy, "~> 2.5"},
       {:ecto_enum, "~> 1.4"},
-      {:faker, "~> 0.17", only: :dev},
+      {:faker, "~> 0.17", only: [:dev, :test]},
       {:ecto_psql_extras, "~> 0.7"},
     ]
   end

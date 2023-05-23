@@ -13,6 +13,8 @@ alias Gojo.Store.Product
 alias Gojo.ShoppingCart
 alias Gojo.ShoppingCart.Cart
 alias Gojo.Orders
+alias Gojo.Tenants
+
 
 alias Gojo.Repo
 
@@ -61,3 +63,5 @@ orders_completed =
 #   #  {:ok, order} = Orders.complete_order(cart)
 #   Orders.complete_order(cart)
 # end
+Tenants.register_tenant("tenant_1")
+Tenants.register_tenant("tenant_2")

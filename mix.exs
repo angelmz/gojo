@@ -54,6 +54,8 @@ defmodule Gojo.MixProject do
       {:ecto_enum, "~> 1.4"},
       {:faker, "~> 0.17", only: [:dev, :test]},
       {:ecto_psql_extras, "~> 0.7"},
+      {:oban, "~> 2.14"},
+      {:matrex, "~> 0.6"}
     ]
   end
 

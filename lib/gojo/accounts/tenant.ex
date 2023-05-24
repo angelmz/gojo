@@ -1,29 +1,22 @@
-defmodule Gojo.Accounts.User do
+defmodule Gojo.Accounts.Tenant do
   use Ecto.Schema
   import Ecto.Changeset
-  import EctoEnum
 
-  defenum(RolesEnum, :role, [
-    :user,
-    :admin,
-    :seller,
-  ])
-
-  schema "users" do
+  schema "tenants" do
+    field :name, :string
     field :email, :string
+    field :subdomain, :string
     field :password, :string, virtual: true, redact: true
     field :hashed_password, :string, redact: true
     field :confirmed_at, :naive_datetime
 
-    field :role, RolesEnum, default: :user
-    has_many :products, Gojo.Store.Product
-    belongs_to :tenant, Gojo.Accounts.Tenant
+    has_many :users, Gojo.Accounts.User
 
     timestamps()
   end
 
   @doc """
-  A user changeset for registration.
+  A tenant changeset for registration.
 
   It is important to validate the length of both email and password.
   Otherwise databases may truncate the email without warnings, which
@@ -45,9 +38,10 @@ defmodule Gojo.Accounts.User do
       submitting the form), this option can be set to `false`.
       Defaults to `true`.
   """
-  def registration_changeset(user, attrs, opts \\ []) do
-    user
-    |> cast(attrs, [:email, :password])
+  def registration_changeset(tenant, attrs, opts \\ []) do
+    tenant
+    |> cast(attrs, [:name, :subdomain, :email, :password])
+    |> unique_constraint(:subdomain)
     |> validate_email(opts)
     |> validate_password(opts)
   end
@@ -99,12 +93,12 @@ defmodule Gojo.Accounts.User do
   end
 
   @doc """
-  A user changeset for changing the email.
+  A tenant changeset for changing the email.
 
   It requires the email to change otherwise an error is added.
   """
-  def email_changeset(user, attrs, opts \\ []) do
-    user
+  def email_changeset(tenant, attrs, opts \\ []) do
+    tenant
     |> cast(attrs, [:email])
     |> validate_email(opts)
     |> case do
@@ -114,7 +108,7 @@ defmodule Gojo.Accounts.User do
   end
 
   @doc """
-  A user changeset for changing the password.
+  A tenant changeset for changing the password.
 
   ## Options
 
@@ -125,8 +119,8 @@ defmodule Gojo.Accounts.User do
       validations on a LiveView form), this option can be set to `false`.
       Defaults to `true`.
   """
-  def password_changeset(user, attrs, opts \\ []) do
-    user
+  def password_changeset(tenant, attrs, opts \\ []) do
+    tenant
     |> cast(attrs, [:password])
     |> validate_confirmation(:password, message: "does not match password")
     |> validate_password(opts)
@@ -135,18 +129,18 @@ defmodule Gojo.Accounts.User do
   @doc """
   Confirms the account by setting `confirmed_at`.
   """
-  def confirm_changeset(user) do
+  def confirm_changeset(tenant) do
     now = NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second)
-    change(user, confirmed_at: now)
+    change(tenant, confirmed_at: now)
   end
 
   @doc """
   Verifies the password.
 
-  If there is no user or the user doesn't have a password, we call
+  If there is no tenant or the tenant doesn't have a password, we call
   `Bcrypt.no_user_verify/0` to avoid timing attacks.
   """
-  def valid_password?(%Gojo.Accounts.User{hashed_password: hashed_password}, password)
+  def valid_password?(%Gojo.Accounts.Tenant{hashed_password: hashed_password}, password)
       when is_binary(hashed_password) and byte_size(password) > 0 do
     Bcrypt.verify_pass(password, hashed_password)
   end

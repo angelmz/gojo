@@ -5,6 +5,7 @@ alias Gojo.Store
 alias Gojo.Store.Product
 alias Gojo.Accounts
 alias Gojo.Accounts.User
+alias Gojo.Accounts.Tenant
 alias Gojo.Repo
 alias Gojo.ShoppingCart
 alias Gojo.ShoppingCart.Cart

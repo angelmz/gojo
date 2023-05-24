@@ -16,16 +16,27 @@ alias Gojo.Orders
 
 alias Gojo.Repo
 
+tenants =
+  for _ <- 1..10 do
+    Gojo.Accounts.register_tenant(%{
+      name: Faker.Company.name(),
+      email: Faker.Internet.email(),
+      subdomain: Faker.Internet.domain_word(),
+      password: Faker.Lorem.characters(12) |> to_string,
+    })
+  end
+
 users =
   for _ <- 1..10 do
-    Gojo.Accounts.register_user(%{
+    {:ok, tenant} = Enum.random(tenants)
+    Gojo.Accounts.register_user(tenant.id, %{
       email: Faker.Internet.email(),
       password: Faker.Lorem.characters(12) |> to_string,
     })
   end
 
 products =
-  for _ <- 1..50 do
+  for _ <- 1..10 do
     {:ok, seller} = Enum.random(users)
     Product.changeset(%Product{}, %{
       title: Faker.Lorem.sentence() |> String.slice(0, 255),

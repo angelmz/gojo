@@ -695,4 +695,22 @@ defmodule Gojo.Accounts do
       {:error, :tenant, changeset, _} -> {:error, changeset}
     end
   end
+
+  def find_tenant_by_subdomain(subdomain) when is_binary(subdomain) do
+    Repo.one(from(t in Tenant, where: t.subdomain == ^subdomain))
+  end
 end
+# def get_user_by_email(email) when is_binary(email) do
+#   Repo.get_by(User, email: email)
+# end
+# def get_cart_by_user_id(user_id) do
+#   Repo.one(
+#     from(c in Cart,
+#       where: c.user_id == ^user_id,
+#       left_join: i in assoc(c, :items),
+#       left_join: p in assoc(i, :product),
+#       order_by: [asc: i.inserted_at],
+#       preload: [items: {i, product: p}]
+#     )
+#   )
+# end

@@ -14,11 +14,28 @@ defmodule GojoWeb.Router do
     plug :put_secure_browser_headers
     plug :fetch_current_tenant
     plug :fetch_current_user
+    plug GojoWeb.Plugs.Get_Subdomain_From_Host_Plug
   end
 
   pipeline :api do
     plug :accepts, ["json"]
   end
+
+  # pipeline :subdomain do
+  #   plug :identify_subdomain
+  # end
+
+  # defp identify_subdomain(conn, _) do
+  #   [subdomain | _] = conn.host |> String.split(".") |> Enum.reverse
+  #   assign(conn, :subdomain, subdomain)
+  # end
+
+  # scope "/", GojoWeb do
+  #   pipe_through [:browser, :subdomain]
+
+  #   get "/", TenantController, :index
+  #   # Add more routes specific to tenants here
+  # end
 
   scope "/", GojoWeb do
     pipe_through :browser

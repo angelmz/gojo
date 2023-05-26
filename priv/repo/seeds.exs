@@ -16,6 +16,20 @@ alias Gojo.Orders
 
 alias Gojo.Repo
 
+Gojo.Accounts.register_tenant(%{
+  name: "Alabama",
+  email: "alabama@state.com",
+  subdomain: "alabama",
+  password: Faker.Lorem.characters(12) |> to_string,
+})
+
+Gojo.Accounts.register_tenant(%{
+  name: "Kentucky",
+  email: "kentucky@state.com",
+  subdomain: "kentucky",
+  password: Faker.Lorem.characters(12) |> to_string,
+})
+
 tenants =
   for _ <- 1..10 do
     Gojo.Accounts.register_tenant(%{

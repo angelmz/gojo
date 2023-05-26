@@ -54,15 +54,6 @@ defmodule Gojo.AccountsFixtures do
     })
   end
 
-  def tenant_fixture(attrs \\ %{}) do
-    {:ok, tenant} =
-      attrs
-      |> valid_tenant_attributes()
-      |> Gojo.Accounts.register_tenant()
-
-    tenant
-  end
-
   def extract_tenant_token(fun) do
     {:ok, captured_email} = fun.(&"[TOKEN]#{&1}[TOKEN]")
     [_, token | _] = String.split(captured_email.text_body, "[TOKEN]")

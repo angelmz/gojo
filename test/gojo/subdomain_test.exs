@@ -16,11 +16,10 @@ defmodule GojoWeb.Plugs.Get_Subdomain_From_Host_PlugTest do
   end
 
   test "signup user on georgia.gojogo.com" do
-    Accounts.register_tenant(%{
+    Accounts.create_tenant(%{
       name: "Georgia",
       subdomain: "georgia",
-      email: Faker.Internet.email(),
-      password: Faker.Lorem.characters(12) |> to_string,
+      domain: "georgia.com",
     })
 
     # We create the subdomain
@@ -30,7 +29,9 @@ defmodule GojoWeb.Plugs.Get_Subdomain_From_Host_PlugTest do
     subdomain = conn.private[:subdomain]
 
     store_front_tenant = Gojo.Accounts.find_tenant_by_subdomain(subdomain)
+    IO.inspect(store_front_tenant)
     {:ok, user} = Accounts.register_user(store_front_tenant.id, %{
+        name: Faker.Person.name(),
         email: Faker.Internet.email(),
         password: Faker.Lorem.characters(12) |> to_string,
       })

@@ -351,42 +351,36 @@ defmodule Gojo.Accounts do
     end
   end
 
-  alias Gojo.Accounts.{Tenant, TenantToken, TenantNotifier}
+  alias Gojo.Accounts.{Tenant}
 
-  ## Database getters
-
-  @doc """
-  Gets a tenant by email.
-
-  ## Examples
-
-      iex> get_tenant_by_email("foo@example.com")
-      %Tenant{}
-
-      iex> get_tenant_by_email("unknown@example.com")
-      nil
-
-  """
-  def get_tenant_by_email(email) when is_binary(email) do
-    Repo.get_by(Tenant, email: email)
+  def find_tenant_by_subdomain(subdomain) when is_binary(subdomain) do
+    Repo.one(from(t in Tenant, where: t.subdomain == ^subdomain))
   end
-
+# def get_user_by_email(email) when is_binary(email) do
+#   Repo.get_by(User, email: email)
+# end
+# def get_cart_by_user_id(user_id) do
+#   Repo.one(
+#     from(c in Cart,
+#       where: c.user_id == ^user_id,
+#       left_join: i in assoc(c, :items),
+#       left_join: p in assoc(i, :product),
+#       order_by: [asc: i.inserted_at],
+#       preload: [items: {i, product: p}]
+#     )
+#   )
+#
   @doc """
-  Gets a tenant by email and password.
+  Returns the list of tenants.
 
   ## Examples
 
-      iex> get_tenant_by_email_and_password("foo@example.com", "correct_password")
-      %Tenant{}
-
-      iex> get_tenant_by_email_and_password("foo@example.com", "invalid_password")
-      nil
+      iex> list_tenants()
+      [%Tenant{}, ...]
 
   """
-  def get_tenant_by_email_and_password(email, password)
-      when is_binary(email) and is_binary(password) do
-    tenant = Repo.get_by(Tenant, email: email)
-    if Tenant.valid_password?(tenant, password), do: tenant
+  def list_tenants do
+    Repo.all(Tenant)
   end
 
   @doc """
@@ -405,24 +399,56 @@ defmodule Gojo.Accounts do
   """
   def get_tenant!(id), do: Repo.get!(Tenant, id)
 
-  ## Tenant registration
-
   @doc """
-  Registers a tenant.
+  Creates a tenant.
 
   ## Examples
 
-      iex> register_tenant(%{field: value})
+      iex> create_tenant(%{field: value})
       {:ok, %Tenant{}}
 
-      iex> register_tenant(%{field: bad_value})
+      iex> create_tenant(%{field: bad_value})
       {:error, %Ecto.Changeset{}}
 
   """
-  def register_tenant(attrs) do
+  def create_tenant(attrs \\ %{}) do
     %Tenant{}
-    |> Tenant.registration_changeset(attrs)
+    |> Tenant.changeset(attrs)
     |> Repo.insert()
+  end
+
+  @doc """
+  Updates a tenant.
+
+  ## Examples
+
+      iex> update_tenant(tenant, %{field: new_value})
+      {:ok, %Tenant{}}
+
+      iex> update_tenant(tenant, %{field: bad_value})
+      {:error, %Ecto.Changeset{}}
+
+  """
+  def update_tenant(%Tenant{} = tenant, attrs) do
+    tenant
+    |> Tenant.changeset(attrs)
+    |> Repo.update()
+  end
+
+  @doc """
+  Deletes a tenant.
+
+  ## Examples
+
+      iex> delete_tenant(tenant)
+      {:ok, %Tenant{}}
+
+      iex> delete_tenant(tenant)
+      {:error, %Ecto.Changeset{}}
+
+  """
+  def delete_tenant(%Tenant{} = tenant) do
+    Repo.delete(tenant)
   end
 
   @doc """
@@ -430,287 +456,11 @@ defmodule Gojo.Accounts do
 
   ## Examples
 
-      iex> change_tenant_registration(tenant)
+      iex> change_tenant(tenant)
       %Ecto.Changeset{data: %Tenant{}}
 
   """
-  def change_tenant_registration(%Tenant{} = tenant, attrs \\ %{}) do
-    Tenant.registration_changeset(tenant, attrs, hash_password: false, validate_email: false)
-  end
-
-  ## Settings
-
-  @doc """
-  Returns an `%Ecto.Changeset{}` for changing the tenant email.
-
-  ## Examples
-
-      iex> change_tenant_email(tenant)
-      %Ecto.Changeset{data: %Tenant{}}
-
-  """
-  def change_tenant_email(tenant, attrs \\ %{}) do
-    Tenant.email_changeset(tenant, attrs, validate_email: false)
-  end
-
-  @doc """
-  Emulates that the email will change without actually changing
-  it in the database.
-
-  ## Examples
-
-      iex> apply_tenant_email(tenant, "valid password", %{email: ...})
-      {:ok, %Tenant{}}
-
-      iex> apply_tenant_email(tenant, "invalid password", %{email: ...})
-      {:error, %Ecto.Changeset{}}
-
-  """
-  def apply_tenant_email(tenant, password, attrs) do
-    tenant
-    |> Tenant.email_changeset(attrs)
-    |> Tenant.validate_current_password(password)
-    |> Ecto.Changeset.apply_action(:update)
-  end
-
-  @doc """
-  Updates the tenant email using the given token.
-
-  If the token matches, the tenant email is updated and the token is deleted.
-  The confirmed_at date is also updated to the current time.
-  """
-  def update_tenant_email(tenant, token) do
-    context = "change:#{tenant.email}"
-
-    with {:ok, query} <- TenantToken.verify_change_email_token_query(token, context),
-         %TenantToken{sent_to: email} <- Repo.one(query),
-         {:ok, _} <- Repo.transaction(tenant_email_multi(tenant, email, context)) do
-      :ok
-    else
-      _ -> :error
-    end
-  end
-
-  defp tenant_email_multi(tenant, email, context) do
-    changeset =
-      tenant
-      |> Tenant.email_changeset(%{email: email})
-      |> Tenant.confirm_changeset()
-
-    Ecto.Multi.new()
-    |> Ecto.Multi.update(:tenant, changeset)
-    |> Ecto.Multi.delete_all(:tokens, TenantToken.tenant_and_contexts_query(tenant, [context]))
-  end
-
-  @doc ~S"""
-  Delivers the update email instructions to the given tenant.
-
-  ## Examples
-
-      iex> deliver_tenant_update_email_instructions(tenant, current_email, &url(~p"/tenants/settings/confirm_email/#{&1})")
-      {:ok, %{to: ..., body: ...}}
-
-  """
-  def deliver_tenant_update_email_instructions(%Tenant{} = tenant, current_email, update_email_url_fun)
-      when is_function(update_email_url_fun, 1) do
-    {encoded_token, tenant_token} = TenantToken.build_email_token(tenant, "change:#{current_email}")
-
-    Repo.insert!(tenant_token)
-    TenantNotifier.deliver_update_email_instructions(tenant, update_email_url_fun.(encoded_token))
-  end
-
-  @doc """
-  Returns an `%Ecto.Changeset{}` for changing the tenant password.
-
-  ## Examples
-
-      iex> change_tenant_password(tenant)
-      %Ecto.Changeset{data: %Tenant{}}
-
-  """
-  def change_tenant_password(tenant, attrs \\ %{}) do
-    Tenant.password_changeset(tenant, attrs, hash_password: false)
-  end
-
-  @doc """
-  Updates the tenant password.
-
-  ## Examples
-
-      iex> update_tenant_password(tenant, "valid password", %{password: ...})
-      {:ok, %Tenant{}}
-
-      iex> update_tenant_password(tenant, "invalid password", %{password: ...})
-      {:error, %Ecto.Changeset{}}
-
-  """
-  def update_tenant_password(tenant, password, attrs) do
-    changeset =
-      tenant
-      |> Tenant.password_changeset(attrs)
-      |> Tenant.validate_current_password(password)
-
-    Ecto.Multi.new()
-    |> Ecto.Multi.update(:tenant, changeset)
-    |> Ecto.Multi.delete_all(:tokens, TenantToken.tenant_and_contexts_query(tenant, :all))
-    |> Repo.transaction()
-    |> case do
-      {:ok, %{tenant: tenant}} -> {:ok, tenant}
-      {:error, :tenant, changeset, _} -> {:error, changeset}
-    end
-  end
-
-  ## Session
-
-  @doc """
-  Generates a session token.
-  """
-  def generate_tenant_session_token(tenant) do
-    {token, tenant_token} = TenantToken.build_session_token(tenant)
-    Repo.insert!(tenant_token)
-    token
-  end
-
-  @doc """
-  Gets the tenant with the given signed token.
-  """
-  def get_tenant_by_session_token(token) do
-    {:ok, query} = TenantToken.verify_session_token_query(token)
-    Repo.one(query)
-  end
-
-  @doc """
-  Deletes the signed token with the given context.
-  """
-  def delete_tenant_session_token(token) do
-    Repo.delete_all(TenantToken.token_and_context_query(token, "session"))
-    :ok
-  end
-
-  ## Confirmation
-
-  @doc ~S"""
-  Delivers the confirmation email instructions to the given tenant.
-
-  ## Examples
-
-      iex> deliver_tenant_confirmation_instructions(tenant, &url(~p"/tenants/confirm/#{&1}"))
-      {:ok, %{to: ..., body: ...}}
-
-      iex> deliver_tenant_confirmation_instructions(confirmed_tenant, &url(~p"/tenants/confirm/#{&1}"))
-      {:error, :already_confirmed}
-
-  """
-  def deliver_tenant_confirmation_instructions(%Tenant{} = tenant, confirmation_url_fun)
-      when is_function(confirmation_url_fun, 1) do
-    if tenant.confirmed_at do
-      {:error, :already_confirmed}
-    else
-      {encoded_token, tenant_token} = TenantToken.build_email_token(tenant, "confirm")
-      Repo.insert!(tenant_token)
-      TenantNotifier.deliver_confirmation_instructions(tenant, confirmation_url_fun.(encoded_token))
-    end
-  end
-
-  @doc """
-  Confirms a tenant by the given token.
-
-  If the token matches, the tenant account is marked as confirmed
-  and the token is deleted.
-  """
-  def confirm_tenant(token) do
-    with {:ok, query} <- TenantToken.verify_email_token_query(token, "confirm"),
-         %Tenant{} = tenant <- Repo.one(query),
-         {:ok, %{tenant: tenant}} <- Repo.transaction(confirm_tenant_multi(tenant)) do
-      {:ok, tenant}
-    else
-      _ -> :error
-    end
-  end
-
-  defp confirm_tenant_multi(tenant) do
-    Ecto.Multi.new()
-    |> Ecto.Multi.update(:tenant, Tenant.confirm_changeset(tenant))
-    |> Ecto.Multi.delete_all(:tokens, TenantToken.tenant_and_contexts_query(tenant, ["confirm"]))
-  end
-
-  ## Reset password
-
-  @doc ~S"""
-  Delivers the reset password email to the given tenant.
-
-  ## Examples
-
-      iex> deliver_tenant_reset_password_instructions(tenant, &url(~p"/tenants/reset_password/#{&1}"))
-      {:ok, %{to: ..., body: ...}}
-
-  """
-  def deliver_tenant_reset_password_instructions(%Tenant{} = tenant, reset_password_url_fun)
-      when is_function(reset_password_url_fun, 1) do
-    {encoded_token, tenant_token} = TenantToken.build_email_token(tenant, "reset_password")
-    Repo.insert!(tenant_token)
-    TenantNotifier.deliver_reset_password_instructions(tenant, reset_password_url_fun.(encoded_token))
-  end
-
-  @doc """
-  Gets the tenant by reset password token.
-
-  ## Examples
-
-      iex> get_tenant_by_reset_password_token("validtoken")
-      %Tenant{}
-
-      iex> get_tenant_by_reset_password_token("invalidtoken")
-      nil
-
-  """
-  def get_tenant_by_reset_password_token(token) do
-    with {:ok, query} <- TenantToken.verify_email_token_query(token, "reset_password"),
-         %Tenant{} = tenant <- Repo.one(query) do
-      tenant
-    else
-      _ -> nil
-    end
-  end
-
-  @doc """
-  Resets the tenant password.
-
-  ## Examples
-
-      iex> reset_tenant_password(tenant, %{password: "new long password", password_confirmation: "new long password"})
-      {:ok, %Tenant{}}
-
-      iex> reset_tenant_password(tenant, %{password: "valid", password_confirmation: "not the same"})
-      {:error, %Ecto.Changeset{}}
-
-  """
-  def reset_tenant_password(tenant, attrs) do
-    Ecto.Multi.new()
-    |> Ecto.Multi.update(:tenant, Tenant.password_changeset(tenant, attrs))
-    |> Ecto.Multi.delete_all(:tokens, TenantToken.tenant_and_contexts_query(tenant, :all))
-    |> Repo.transaction()
-    |> case do
-      {:ok, %{tenant: tenant}} -> {:ok, tenant}
-      {:error, :tenant, changeset, _} -> {:error, changeset}
-    end
-  end
-
-  def find_tenant_by_subdomain(subdomain) when is_binary(subdomain) do
-    Repo.one(from(t in Tenant, where: t.subdomain == ^subdomain))
+  def change_tenant(%Tenant{} = tenant, attrs \\ %{}) do
+    Tenant.changeset(tenant, attrs)
   end
 end
-# def get_user_by_email(email) when is_binary(email) do
-#   Repo.get_by(User, email: email)
-# end
-# def get_cart_by_user_id(user_id) do
-#   Repo.one(
-#     from(c in Cart,
-#       where: c.user_id == ^user_id,
-#       left_join: i in assoc(c, :items),
-#       left_join: p in assoc(i, :product),
-#       order_by: [asc: i.inserted_at],
-#       preload: [items: {i, product: p}]
-#     )
-#   )
-# end

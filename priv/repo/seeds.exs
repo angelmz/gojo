@@ -16,27 +16,25 @@ alias Gojo.Orders
 
 alias Gojo.Repo
 
-Gojo.Accounts.register_tenant(%{
+Gojo.Accounts.create_tenant(%{
   name: "Alabama",
-  email: "alabama@state.com",
-  subdomain: "alabama",
-  password: Faker.Lorem.characters(12) |> to_string,
+  domain: "alabama.com",
+  subdomain: "alabama.gojogo.com",
 })
 
-Gojo.Accounts.register_tenant(%{
+Gojo.Accounts.create_tenant(%{
   name: "Kentucky",
-  email: "kentucky@state.com",
-  subdomain: "kentucky",
-  password: Faker.Lorem.characters(12) |> to_string,
+  domain: "kentucky.com",
+  subdomain: "kentucky.gojogo.com",
 })
 
 tenants =
   for _ <- 1..10 do
-    Gojo.Accounts.register_tenant(%{
+    domain = Faker.Internet.domain_word()
+    Gojo.Accounts.create_tenant(%{
       name: Faker.Company.name(),
-      email: Faker.Internet.email(),
-      subdomain: Faker.Internet.domain_word(),
-      password: Faker.Lorem.characters(12) |> to_string,
+      domain: domain <> ".com",
+      subdomain: domain <> ".gojogo.com",
     })
   end
 
@@ -44,6 +42,7 @@ users =
   for _ <- 1..10 do
     {:ok, tenant} = Enum.random(tenants)
     Gojo.Accounts.register_user(tenant.id, %{
+      name: Faker.Person.name(),
       email: Faker.Internet.email(),
       password: Faker.Lorem.characters(12) |> to_string,
     })
@@ -63,7 +62,7 @@ products =
     |> Repo.insert!
   end
 
-create_carts_and_add_products_to_carts =
+_create_carts_and_add_products_to_carts =
   for {:ok, user} <- users do
     {:ok, cart} = ShoppingCart.create_cart(user.id)
     for _ <- 1..10 do
@@ -75,10 +74,10 @@ create_carts_and_add_products_to_carts =
 
 repoed_carts = Repo.all(Cart)
 
-orders_completed =
+_orders_completed =
   for repoed_cart <- repoed_carts do
     cart = ShoppingCart.get_cart_by_user_id(repoed_cart.user_id)
-    {:ok, order} = Orders.complete_order(cart)
+    {:ok, _order} = Orders.complete_order(cart)
   end
 # for {:ok, user_with_carts_and_items} <- users_with_carts_and_items do
 #   # IO.inspect(user_with_carts_and_items)

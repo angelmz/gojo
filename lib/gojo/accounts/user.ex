@@ -11,6 +11,7 @@ defmodule Gojo.Accounts.User do
 
   schema "users" do
     field :email, :string
+    field :name, :string  # add this line
     field :password, :string, virtual: true, redact: true
     field :hashed_password, :string, redact: true
     field :confirmed_at, :naive_datetime
@@ -47,9 +48,11 @@ defmodule Gojo.Accounts.User do
   """
   def registration_changeset(user, attrs, opts \\ []) do
     user
-    |> cast(attrs, [:email, :password])
+    |> cast(attrs, [:email, :password, :tenant_id, :name])  # add :name
+    |> validate_required([:email, :password, :tenant_id, :name])  # add :name
     |> validate_email(opts)
     |> validate_password(opts)
+    |> assoc_constraint(:tenant)  # Ensure tenant exists
   end
 
   defp validate_email(changeset, opts) do
@@ -91,8 +94,8 @@ defmodule Gojo.Accounts.User do
   defp maybe_validate_unique_email(changeset, opts) do
     if Keyword.get(opts, :validate_email, true) do
       changeset
-      |> unsafe_validate_unique(:email, Gojo.Repo)
-      |> unique_constraint(:email)
+      |> unsafe_validate_unique([:email, :tenant_id], Gojo.Repo)  # Include :tenant_id
+      |> unique_constraint(:email, name: :users_email_tenant_id_index)  # Add unique constraint
     else
       changeset
     end

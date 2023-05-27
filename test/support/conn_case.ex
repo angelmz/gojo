@@ -72,30 +72,4 @@ defmodule GojoWeb.ConnCase do
     |> Phoenix.ConnTest.init_test_session(%{})
     |> Plug.Conn.put_session(:user_token, token)
   end
-
-  @doc """
-  Setup helper that registers and logs in tenants.
-
-      setup :register_and_log_in_tenant
-
-  It stores an updated connection and a registered tenant in the
-  test context.
-  """
-  def register_and_log_in_tenant(%{conn: conn}) do
-    tenant = Gojo.AccountsFixtures.tenant_fixture()
-    %{conn: log_in_tenant(conn, tenant), tenant: tenant}
-  end
-
-  @doc """
-  Logs the given `tenant` into the `conn`.
-
-  It returns an updated `conn`.
-  """
-  def log_in_tenant(conn, tenant) do
-    token = Gojo.Accounts.generate_tenant_session_token(tenant)
-
-    conn
-    |> Phoenix.ConnTest.init_test_session(%{})
-    |> Plug.Conn.put_session(:tenant_token, token)
-  end
 end

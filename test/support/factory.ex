@@ -9,11 +9,10 @@ defmodule Gojo.Factory do
   alias Gojo.Repo
 
   def insert(:tenant) do
-    Tenant.registration_changeset(%Tenant{}, %{
+    Tenant.changeset(%Tenant{}, %{
       name: Faker.Company.name(),
-      email: Faker.Internet.email(),
       subdomain: Faker.Internet.domain_word(),
-      password: Faker.Lorem.characters(12) |> to_string,
+      domain: Faker.Internet.domain_word() <> ".com"
     })
     |> Repo.insert!()
   end
@@ -21,6 +20,7 @@ defmodule Gojo.Factory do
   def insert(:user) do
     {:ok, tenant} = insert(:tenant)
     User.registration_changeset(%User{}, %{
+      name: Faker.Person.name(),
       email: Faker.Internet.email(),
       password: Faker.Lorem.characters(12) |> to_string,
       tenant_id: tenant.id

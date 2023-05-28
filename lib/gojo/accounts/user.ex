@@ -22,7 +22,6 @@ defmodule Gojo.Accounts.User do
 
     timestamps()
   end
-
   @doc """
   A user changeset for registration.
 
@@ -48,8 +47,8 @@ defmodule Gojo.Accounts.User do
   """
   def registration_changeset(user, attrs, opts \\ []) do
     user
-    |> cast(attrs, [:email, :password, :tenant_id, :name])  # add :name
-    |> validate_required([:email, :password, :tenant_id, :name])  # add :name
+    |> cast(attrs, [:email, :password, :tenant_id, :name, :role])  # add :name
+    |> validate_required([:email, :password, :tenant_id, :name, :role])  # add :name
     |> validate_email(opts)
     |> validate_password(opts)
     |> assoc_constraint(:tenant)  # Ensure tenant exists

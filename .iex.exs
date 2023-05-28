@@ -21,6 +21,14 @@ import_if_available Ecto.Query
 import_if_available Ecto.Changeset
 
 defmodule H do
+  def inspect() do
+    Accounts.register_user(1, %{
+      name: Faker.Person.name(),
+      email: Faker.Internet.email(),
+      password: Faker.Lorem.characters(12) |> to_string,
+      role: :admin,
+    })
+  end
   def stats do
     EctoPSQLExtras.cache_hit(Gojo.Repo)
     EctoPSQLExtras.diagnose(Gojo.Repo)

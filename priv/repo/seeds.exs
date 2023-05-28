@@ -15,52 +15,64 @@ alias Gojo.ShoppingCart.Cart
 alias Gojo.Orders
 
 alias Gojo.Repo
-
-Gojo.Accounts.create_tenant(%{
-  name: "Alabama",
-  domain: "alabama.com",
-  subdomain: "alabama.gojogo.com",
-})
-
-Gojo.Accounts.create_tenant(%{
-  name: "Kentucky",
-  domain: "kentucky.com",
-  subdomain: "kentucky.gojogo.com",
-})
+# Implement
+# tenants =
+#   1..10
+#   |> Enum.map(fn _ ->
+#     Task.async(fn ->
+#       with {:ok, tenant} <- create_tenant() do
+#         tenant
+#       else
+#         _ -> create_tenant() # If tenant creation fails, try again
+#       end
+#     end)
+#   end)
+#   |> Enum.map(&Task.await/1)
 
 tenants =
-  for _ <- 1..10 do
-    domain = Faker.Internet.domain_word()
-    Gojo.Accounts.create_tenant(%{
-      name: Faker.Company.name(),
-      domain: domain <> ".com",
-      subdomain: domain <> ".gojogo.com",
-    })
-  end
+  1..10
+  |> Enum.map(fn _ ->
+    Task.async(fn ->
+      domain = Faker.Internet.domain_word()
+      Gojo.Accounts.create_tenant(%{
+        name: Faker.Company.name(),
+        domain: domain <> ".com",
+        subdomain: domain <> ".gojogo.com",
+      })
+    end)
+  end)
+  |> Enum.map(&Task.await/1)
 
 users =
-  for _ <- 1..10 do
-    {:ok, tenant} = Enum.random(tenants)
-    Gojo.Accounts.register_user(tenant.id, %{
-      name: Faker.Person.name(),
-      email: Faker.Internet.email(),
-      password: Faker.Lorem.characters(12) |> to_string,
-    })
-  end
+  1..10
+  |> Enum.map(fn _ ->
+    Task.async(fn ->
+      {:ok, tenant} = Enum.random(tenants)
+      Gojo.Accounts.register_user(tenant.id, %{
+        name: Faker.Person.name(),
+        email: Faker.Internet.email(),
+        password: Faker.Lorem.characters(12) |> to_string,
+      })
+    end)
+  end)
+  |> Enum.map(&Task.await/1)
 
-products =
-  for _ <- 1..10 do
-    {:ok, seller} = Enum.random(users)
-    Product.changeset(%Product{}, %{
-      title: Faker.Lorem.sentence() |> String.slice(0, 255),
-      description: Faker.Lorem.paragraph() |> String.slice(0, 255),
-      price: :rand.uniform * 100 |> Float.round(2),
-      #Note not happy about abonding bigint for now.
-      sku: :rand.uniform(999999999) + 1,
-      user_id: seller.id
-    })
-    |> Repo.insert!
-  end
+  products =
+    1..10
+    |> Enum.map(fn _ ->
+      Task.async(fn ->
+        {:ok, seller} = Enum.random(users)
+        Product.changeset(%Product{}, %{
+          title: Faker.Lorem.sentence() |> String.slice(0, 255),
+          description: Faker.Lorem.paragraph() |> String.slice(0, 255),
+          price: :rand.uniform * 100 |> Float.round(2),
+          sku: :rand.uniform(999999999) + 1,
+          user_id: seller.id
+        })
+        |> Repo.insert!
+      end)
+    end)
+    |> Enum.map(&Task.await/1)
 
 _create_carts_and_add_products_to_carts =
   for {:ok, user} <- users do

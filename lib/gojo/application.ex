@@ -4,9 +4,14 @@ defmodule Gojo.Application do
   @moduledoc false
 
   use Application
+  # import OpentelemetryEcto
 
   @impl true
   def start(_type, _args) do
+    :opentelemetry_cowboy.setup()
+    OpentelemetryPhoenix.setup(adapter: :cowboy2)
+    OpentelemetryEcto.setup([:gojo, :repo])
+
     children = [
       # Start the Telemetry supervisor
       GojoWeb.Telemetry,

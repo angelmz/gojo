@@ -8,6 +8,11 @@ defmodule Gojo.MixProject do
       elixir: "~> 1.14",
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
+      releases: [
+        gojo: [
+          applications: [opentelemetry: :temporary]
+        ]
+      ],
       aliases: aliases(),
       deps: deps()
     ]
@@ -54,6 +59,13 @@ defmodule Gojo.MixProject do
       {:ecto_enum, "~> 1.4"},
       {:faker, "~> 0.17", only: [:dev, :test]},
       {:ecto_psql_extras, "~> 0.7"},
+      {:opentelemetry, "~> 1.3"},
+      {:opentelemetry_api, "~> 1.2"},
+      {:opentelemetry_exporter, "~> 1.4"},
+      {:opentelemetry_phoenix, "~> 1.1"},
+      {:opentelemetry_cowboy, "~> 0.2"},
+      {:opentelemetry_ecto, "~> 1.0"},
+      {:opentelemetry_semantic_conventions, "~> 0.2"},
     ]
   end
 

@@ -77,3 +77,15 @@ config :phoenix, :plug_init_mode, :runtime
 
 # Disable swoosh api client as it is only required for production adapters.
 config :swoosh, :api_client, false
+
+# Open telemetry
+config :opentelemetry,
+       :processors,
+       otel_batch_processor: %{
+         # Using `localhost` here since we are starting outside docker-compose where
+         # otel would refer to the hostname of the OpenCollector,
+         #
+         # If you are running in docker compose, kindly change it to the correct
+         # hostname: `otel`
+         exporter: {:opentelemetry_exporter, %{endpoints: [{:http, "localhost", 4318, []}]}}
+       }
